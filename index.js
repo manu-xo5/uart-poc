@@ -61,18 +61,33 @@ socket.on("connect", async () => {
         break;
       }
 
-      case "readPillbox": {
-        const pillboxId = await uart.readPillbox();
-        console.log("nfc:", pillboxId);
-        break;
-      }
-
       case "pick": {
         try {
           await uart.moveStpToPickPosition();
         } catch (e) {
           console.error(e);
         }
+        break;
+      }
+
+      case "lockCan": {
+        await uart.controlCanisterLock(true);
+        break;
+      }
+
+      case "readPillbox": {
+        const pillboxId = await uart.readPillbox();
+        console.log("nfc:", pillboxId);
+        break;
+      }
+
+      case "homePillbox": {
+        await uart.homePillbox();
+        break;
+      }
+
+      case "move_px": {
+        await uart.moveStpPillbox(1, 1);
         break;
       }
 

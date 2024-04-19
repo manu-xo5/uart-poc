@@ -155,6 +155,25 @@ class UartImpl {
 
     return sleep();
   }
+
+  async controlCanisterLock(shouldOpen) {
+    const value = shouldOpen ? 1 : 0;
+    this.connector(this.make8Bytes([30]));
+    this.connector(this.make8Bytes([value]));
+    await sleep();
+  }
+
+  async homePillbox() {
+    this.connector(this.make8Bytes([26]));
+    await sleep();
+  }
+
+  async moveStpPillbox(dir, value) {
+    this.connector(this.make8Bytes([4]));
+    await sleep();
+    this.connector(this.make8Bytes([dir === 1 ? 0 : -1, value * dir]));
+    await sleep();
+  }
 }
 
 class Uart extends UartImpl {
