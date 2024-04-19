@@ -67,10 +67,28 @@ socket.on("connect", async () => {
         break;
       }
 
+      case "pick": {
+        try {
+          await uart.moveStpToPickPosition();
+        } catch (e) {
+          console.error(e);
+        }
+        break;
+      }
+
+      case "drop": {
+        try {
+          await uart.moveStpToDropPosition();
+        } catch (e) {
+          console.error(e);
+        }
+        break;
+      }
+
       default: {
         const [cmd, ...args] = values.split(" ").map((x) => +x);
         socket.emit("uart:send", uart.make8Bytes([cmd]));
-        socket.emit("uart:send", uart.make8Bytes([...args]));
+        args.length && socket.emit("uart:send", uart.make8Bytes([...args]));
         await sleep();
         continue;
       }

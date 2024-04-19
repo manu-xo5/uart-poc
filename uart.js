@@ -4,6 +4,7 @@ const CMD = {
   gate_sol: 45,
   gate_mag: 8,
   stp_can: 19,
+  stp_motor: 17,
   home: 3,
   pump: 6,
   nfc_can: 11,
@@ -46,6 +47,19 @@ const pojo = {
       },
     },
   },
+
+  17: {
+    name: "stpMotor",
+    cmd: 17,
+    returns: {
+      len: 4,
+      status: {
+        pos: 1,
+        successValue: 0,
+        errorValue: 255,
+      },
+    },
+  },
 };
 
 class UartImpl {
@@ -54,7 +68,7 @@ class UartImpl {
   rx = Array(10).fill(new Int8Array(0));
   receiver = (data) => {
     // /** @type {Number} */
-    const newHead = new Int8Array(data);
+    const newHead = new Uint8Array(data);
     this.rx.unshift(newHead);
     this.rx.pop();
 
@@ -90,13 +104,6 @@ class UartImpl {
     return sleep();
   }
 
-  async moveStpCan(dir, value) {
-    this.connector(this.make8Bytes([19]));
-    await sleep(1000);
-    this.connector(this.make8Bytes([dir === 1 ? 0 : -1, value * dir]));
-    return sleep();
-  }
-
   async home() {
     this.connector(this.make8Bytes([3]));
     await sleep();
@@ -123,6 +130,31 @@ class UartImpl {
     console.log("correctOrder", correctOrder);
     return String.fromCharCode(...correctOrder);
   }
+
+  async moveStpCan(dir, value) {
+    this.connector(this.make8Bytes([19]));
+    await sleep(1000);
+    this.connector(this.make8Bytes([dir === 1 ? 0 : -1, value * dir]));
+    return sleep();
+  }
+
+  async moveStpMotor(pos) {
+    let cmd = CMD.stp_motor;
+    this.connector(this.make8Bytes([cmd]));
+    await sleep();
+    this.connector(this.make8Bytes(pos));
+    await sleep(5000);
+
+    const rx = this.readRx(1).flatMap((x) => Array.from(x));
+    const errorIdx = 1;
+    const errorValue = 255;
+
+    if (rx[errorIdx] === errorValue) {
+      throw new Error("Error moving stp motor");
+    }
+
+    return sleep();
+  }
 }
 
 class Uart extends UartImpl {
@@ -137,12 +169,20 @@ class Uart extends UartImpl {
     await this.controlGateMagnet(true);
   }
 
-  async readCanister() {
-    return await this.readNFC(1);
+  readCanister() {
+    return this.readNFC(1);
   }
 
-  async readPillbox() {
-    return await this.readNFC(2);
+  readPillbox() {
+    return this.readNFC(2);
+  }
+
+  moveStpToPickPosition() {
+    return this.moveStpMotor([1, 0]);
+  }
+
+  moveStpToDropPosition() {
+    return this.moveStpMotor([0, 1]);
   }
 }
 
